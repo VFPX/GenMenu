@@ -1186,7 +1186,31 @@ IF objtype=c_item AND ;
       STORE c_key_padhotkey_LOC + UPPER(SUBSTRC(prompt,m.nPosition+2,1)) TO m.cKeyname
    ELSE
       IF !IsLeadByte(prompt)
-	      STORE c_key_padhotkey_LOC + UPPER(LEFT(prompt,1)) TO m.cKeyname
+                *-- CLP - 07/19/2018 - BEG - Don't assume the first character is a valid hotkey 
+             *!*    STORE c_key_padhotkey_LOC + UPPER(LEFT(prompt,1)) TO m.cKeyname
+                LOCAL lcString, lnLen, ln, lcChar
+                lcString = ALLTRIM(UPPER(prompt))
+
+                *-- If the first character is a quote ("), assume there's an expression to be 
+                *-- evaluated so move beyond the expression and try to find the static characters.                               
+                IF LEFT(m.lcString,1) = ["]
+                            m.lcString = STRTRAN(m.lcString, STREXTRACT(m.lcString, ["], ["],1,2+4 ), '')
+                ENDIF 
+                     
+                *-- Find the first valid character
+                lnLen = LEN(m.lcString)
+                lcChar = ''
+                FOR ln = 1 TO m.lnLen
+                     lcChar = SUBSTR(m.lcString,ln,1)
+                     IF NOT m.lcChar $ ' "+[];\' + "'"
+                           EXIT 
+                      ENDIF 
+                      lcChar = ''
+                ENDFOR 
+                IF NOT EMPTY(m.lcChar)
+                    STORE c_key_padhotkey_LOC + m.lcChar TO m.cKeyname
+                ENDIF 
+                *-- CLP - 07/19/2018 - END - Don't assume the first character is a valid hotkey
 	  ELSE
 	      STORE "" to m.cKeyname
 	  ENDIF
